@@ -49,7 +49,7 @@ app.get('/f1/circuits/season/:year', async (req, res) => {
         .eq('year', req.params.year)
         .order('round', { ascending: true });
     if (error || data.length === 0) {
-        return res.status(404).json({ error: 'No circuits found for the given season' });
+        return res.status(404).json({ error: `No circuits found for the given season ${req.params.year}`});
     }
     const circuitIds = data.map(race => race.circuitId);
     const circuits = await supabase
