@@ -137,15 +137,12 @@ app.get('/f1/races/:raceId', async (req, res) => {
             .from('races')
             .select(`name, year, circuits!inner (name, location, country)`)
             .eq('raceId', req.params.raceId);
-
         if (error) {
             throw error;
         }
-
         if (!data || data.length === 0) {
             return res.status(404).json({ error: `${req.params.raceId} is an invalid race ID` });
         }
-
         res.json(data);
     } catch (error) {
         console.error('Error fetching race details:', error.message);
