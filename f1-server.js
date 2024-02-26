@@ -171,122 +171,117 @@ app.get('/f1/races/season/:year', async (req, res) => {
 app.get('/f1/races/season/:year/:round', async (req, res) => {
     const { data, error } = await supabase
         .from('races')
-        .select()
-        .eq('year', req.params.year)
+        .select('*, seasons!inner (*)')
+        .eq('seasons.year', req.params.year)
         .eq('round', req.params.round);
     if (error || data.length === 0) {
-        return res.status(404).json({ error: 'Race not found' });
+        return res.status(404).json({ error: `Race not found in round ${req.params.round} in ${req.params.year} season`});
     }
     res.json(data);
 });
 
 // Return all races for a given circuit
-app.get('/f1/races/circuits/ref/:circuitRef', async (req, res) => {
-    const { data, error } = await supabase
-        .from('races')
-        .select()
-        .eq('circuitRef', req.params.circuitRef)
-        .order('year', { ascending: true });
+app.get('/f1/races/circuits/:ref', async (req, res) => {
+    const {data, error} = await supabase
+    .from('races')
+    .select(`name, year, circuits!inner (name, location, country)`)
+    .eq('circuits.circuitRef', req.params.ref)
+    .order('year', { ascending: true });
     if (error || data.length === 0) {
-        return res.status(404).json({ error: 'No races found for the given circuit' });
+        return res.status(404).json({ error: `No races found for the given circuit ${re.params.ref}`});
     }
     res.json(data);
 });
 
 // Return races for a given circuit between two years
-app.get('/f1/races/circuits/ref/:circuitRef/season/:startYear/:endYear', async (req, res) => {
-    const { data, error } = await supabase
-        .from('races')
-        .select()
-        .eq('circuitRef', req.params.circuitRef)
-        .gte('year', req.params.startYear)
-        .lte('year', req.params.endYear)
-        .order('year', { ascending: true });
+app.get('/f1/races/circuits/:ref/season/:start/:end', async (req, res) => {
+    const {data, error} = await supabase
+    .from('races')
+    .select(`name, year, circuits!inner (name, location, country)`)
+    .eq('circuits.circuitRef', req.params.ref)
+    .gte('year', req.params.start)
+    .lte('year', req.params.end)
+    .order('year', { ascending: true });
     if (error || data.length === 0) {
-        return res.status(404).json({ error: 'No races found for the given circuit and years' });
+        return res.status(404).json({ error: `No races found for the given circuit ${re1.params.ref} and years ${req.params.start} - ${req.params.end}`});
     }
     res.json(data);
 });
 
 // Return results for the specified race
-app.get('/f1/results/race/:raceId', async (req, res) => {
-    const { data, error } = await supabase
-        .from('results')
-        .select(`
-            driverId (driverRef, code, forename, surname),
-            raceId (name, round, year, date),
-            constructorId (name, constructorRef, nationality),
-            positionOrder
-        `)
-        .eq('raceId', req.params.raceId)
-        .order('positionOrder', { ascending: true });
+app.get('/f1/results/:raceId', async (req, res) => {
+    const {data, error} = await supabase
+    .from('results')
+    .select(`drivers!inner (driverRef, code, forename, surname), races!inner (name, round, year, date), constructors!inner (name, constructorRef, nationality)`)
+    .eq('races.raceId', req.params.raceId)
+    .order('grid', { ascending: true });
     if (error || data.length === 0) {
-        return res.status(404).json({ error: 'Results not found for the specified race' });
+        return res.status(404).json({ error: `Results not found for the specified race ${req.params.raceId}`});
     }
     res.json(data);
 });
 
 // Return results for a given driver
 app.get('/f1/results/driver/:ref', async (req, res) => {
-    const { data, error } = await supabase
-        .from('results')
-        .select()
-        .eq('driverId', req.params.ref);
+    const {data, error} = await supabase
+    .from('results')
+    .select('drivers!inner (driverRef, code, forename, surname), *')
+    .eq('drivers.driverRef', req.params.ref);
     if (error || data.length === 0) {
-        return res.status(404).json({ error: 'Results not found for the specified driver' });
+        return res.status(404).json({ error: `Results not found for the specified driver ${req.params.ref}`});
     }
     res.json(data);
 });
 
 // Return results for a given driver between two years
-app.get('/f1/results/driver/:ref/seasons/:startYear/:endYear', async (req, res) => {
-    const { data, error } = await supabase
-        .from('results')
-        .select()
-        .eq('driverId', req.params.ref)
-        .gte('year', req.params.startYear)
-        .lte('year', req.params.endYear);
+app.get('/f1/results/driver/:ref/seasons/:start/:end', async (req, res) => {
+    const {data, error} = await supabase
+    .from('results')
+    .select(`drivers!inner (driverRef, code, forename, surname), races!inner (year), *`)
+    .eq('drivers.driverRef', req.params.ref)
+    .gte('races.year', req.params.start)
+    .lte('races.year', req.params.end);
     if (error || data.length === 0) {
-        return res.status(404).json({ error: 'Results not found for the specified driver and years' });
+        return res.status(404).json({ error: `Results not found for the specified driver ${req.params.ref} and years ${req.params.start} - ${req.params.end}` });
     }
     res.json(data);
 });
 
 // Return qualifying results for the specified race
 app.get('/f1/qualifying/:raceId', async (req, res) => {
-    const { data, error } = await supabase
-        .from('qualifying')
-        .select()
-        .eq('raceId', req.params.raceId)
-        .order('position', { ascending: true });
+    const {data, error} = await supabase
+    .from('qualifying')
+    .select(`drivers!inner (driverRef, code, forename, surname), races!inner (name, round, year, date), constructors!inner (name, constructorRef, nationality)`)
+    .eq('races.raceId', req.params.raceId)
+    .order('position', { ascending: true });
     if (error || data.length === 0) {
-        return res.status(404).json({ error: 'Qualifying results not found for the specified race' });
+        return res.status(404).json({ error: `Qualifying results not found for the specified race ${req.params.raceId}`});
     }
     res.json(data);
 });
 
 // Return current season driver standings for the specified race
 app.get('/f1/standings/:raceId/drivers', async (req, res) => {
-    const { data, error } = await supabase
-        .from('driver_standings')
-        .select()
-        .eq('raceId', req.params.raceId)
-        .order('position', { ascending: true });
+    const {data, error} = await supabase
+    .from('driverStandings')
+    .select(`drivers!inner (driverRef, code, forename, surname), races!inner (name, round, year, date)`)
+    .eq('races.raceId', req.params.raceId)
+    .order('position', { ascending: true });
     if (error || data.length === 0) {
-        return res.status(404).json({ error: 'Driver standings not found for the specified race' });
+        return res.status(404).json({ error: `Driver standings not found for the specified race ${req.params.raceId}`});
     }
     res.json(data);
 });
 
 // Return current season constructor standings for the specified race
 app.get('/f1/standings/:raceId/constructors', async (req, res) => {
-    const { data, error } = await supabase
-        .from('constructor_standings')
-        .select()
-        .eq('raceId', req.params.raceId)
-        .order('position', { ascending: true });
+    const {data, error} = await supabase
+    .from('constructorStandings')
+    .select(`constructors!inner (constructorRef, name, nationality), races!inner (name, round, year, date)`)
+    .eq('races.raceId', req.params.raceId)
+    .order('position', { ascending: true });
     if (error || data.length === 0) {
-        return res.status(404).json({ error: 'Constructor standings not found for the specified race' });
+        return res.status(404).json({ error: `Constructor standings not found for the specified race ${req.params.raceId}`});
     }
     res.json(data);
 });
