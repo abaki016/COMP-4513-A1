@@ -121,46 +121,48 @@ app.get('/f1/drivers/search/:substring', async (req, res) => {
 app.get('/f1/drivers/race/:raceId', async (req, res) => {
     const { data, error } = await supabase
         .from('results')
-        .select('driverId')
-        .eq('raceId', req.params.raceId);
+        .select(`races!inner (raceId, name, year), drivers (*)`)
+        .eq('races.raceId', req.params.raceId);
+
     if (error || data.length === 0) {
-        return res.status(404).json({ error: 'No drivers found for the given race' });
+        return res.status(404).json({ error: 'RaceID Out Of Reach or Does Not Exist' });
     }
-    const driverIds = data.map(result => result.driverId);
-    const { data: driversData, error: driversError } = await supabase
-        .from('drivers')
-        .select()
-        .in('driverId', driverIds);
-    if (driversError) {
-        return res.status(500).json({ error: 'Internal Server Error' });
-    }
-    res.json(driversData);
+    res.json(data);
 });
 
 // Return details of a specific race
 app.get('/f1/races/:raceId', async (req, res) => {
-    const { data, error } = await supabase
-        .from('races')
-        .select('circuits(name)', 'location', 'country')
-        .eq('raceId', req.params.raceId);
-    if (error || data.length === 0) {
-        return res.status(404).json({ error: 'Race not found' });
+    try {
+        const { data, error } = await supabase
+            .from('races')
+            .select(`name, year, circuits!inner (name, location, country)`)
+            .eq('raceId', req.params.raceId);
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ error: `${req.params.raceId} is an invalid race ID` });
+        }
+
+        res.json(data);
+    } catch (error) {
+        console.error('Error fetching race details:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-    // Extract the circuit name from the nested object
-    const { circuits, location, country } = data[0];
-    const circuitName = circuits[0].name; // Assuming one circuit per race
-    res.json({ circuitName, location, country });
 });
 
 // Return races within a given season
 app.get('/f1/races/season/:year', async (req, res) => {
     const { data, error } = await supabase
         .from('races')
-        .select()
-        .eq('year', req.params.year)
+        .select('*, seasons!inner (*)')
+        .eq('seasons.year', req.params.year)
         .order('round', { ascending: true });
+
     if (error || data.length === 0) {
-        return res.status(404).json({ error: 'No races found for the given season' });
+        return res.status(404).json({ error: `No races found in the season of ${req.params.year}` });
     }
     res.json(data);
 });
