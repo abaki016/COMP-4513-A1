@@ -1,0 +1,25 @@
+{
+  "name": "comp-4513-a1",
+  "version": "1.0.0",
+  "description": "**Please view `COMP4513 Assignment 1.pdf` for instructions**",
+  "main": "f1-server.js",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abaki016/COMP-4513-A1.git"
+  },
+  "author": "Arthur Bakir",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/abaki016/COMP-4513-A1/issues"
+  },
+  "homepage": "https://github.com/abaki016/COMP-4513-A1#readme"
+}
